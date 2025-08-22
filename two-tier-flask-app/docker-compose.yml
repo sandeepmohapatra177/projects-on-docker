@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  mysql:
+    container_name: MYSQL
+    image: mysql
+    environment:
+      MYSQL_DATABASE: "devops"
+      MYSQL_ROOT_PASSWORD: "root"
+    ports:
+      - "3306:3306"
+    networks:
+      - two-tier
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+
+  flask:
+    image: sandeepmohapatra177/two-tier-flask-app:latest
+# i created and pushed two-tier-flask -app in docker hub. so i can use it now without building it. otherwise i have to build and need to provide context
+    container_name: two-tier-flask-app
+    ports:
+      - "5000:5000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DB: devops
+    networks:
+      - two-tier
+    depends_on:
+      - mysql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+
+volumes:
+ mysql_data:
+
+networks:
+ two-tier:
+
+# volumes and network should be mapping not lists
+
